@@ -7,7 +7,7 @@ A collection of simple file servers for Deno Deploy.
 This is a file server for SSG websites that supports clean
 URLs by default (i.e. `/a/b/c` maps to `/a/b/c.html`).
 
-## Example
+### Example
 
 Given the following filesystem
 
@@ -40,7 +40,7 @@ The file server will create the following map from URL pathname to filesystem pa
 | `""`                    | `".../index.html"`         |
 | `"/"`                   | `".../index.html"`         |
 
-## Usage
+### Usage
 
 Using the `deployctl` CLI.
 
