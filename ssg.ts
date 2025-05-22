@@ -1,23 +1,27 @@
 /**
- * A simple SSG file server that supports clean URLs by default.
- *
- * ```sh
- * deno run -ENR ssg.ts
- * ```
+ * A simple file server for SSG websites that supports clean URLs by default.
  *
  * @env ROOT - The root directory. Default is ".".
+ *
+ * @example
+ *
+ * ```sh
+ * # CMD
+ * set "ROOT=_site" && deno run -ENR ssg.ts
+ *
+ * # Bash
+ * ROOT=_site deno run -ENR ssg.ts
+ * ```
  *
  * @module
  */
 
-import { existsSync } from "@std/fs/exists";
 import { walk } from "@std/fs/walk";
-import { join } from "@std/path/join";
 import { resolve } from "@std/path/resolve";
 import { serveFile } from "@std/http/file-server";
 
 /**
- * Mappings from pathname to local filesystem path.
+ * Mappings from URL pathname to filesystem path.
  */
 const files = new Map<string, string>();
 
@@ -30,26 +34,19 @@ function normalize(path: string): string {
   return path.replace(/\\/g, "/").normalize();
 }
 
-for await (const file of walk(root)) {
-  const pathname = normalize(file.path.slice(root.length));
+for await (const { isFile, path } of walk(root)) {
+  if (!isFile) continue;
 
-  if (file.isFile) {
-    files.set(pathname, file.path);
+  const pathname = normalize(path.slice(root.length));
+  files.set(pathname, path);
 
-    if (pathname.endsWith(".html")) {
-      // Support clean URLs, i.e. "/a/b/c" maps to "/a/b/c.html".
-      files.set(pathname.slice(0, -5), file.path);
+  if (pathname.endsWith(".html")) {
+    // "/a/b/c" maps to "/a/b/c.html".
+    files.set(pathname.slice(0, -5), path);
 
-      if (pathname === "/index.html") {
-        files.set("/", file.path);
-      }
-    }
-  } else if (file.isDirectory) {
-    const indexPath = join(file.path, "index.html");
-
-    if (existsSync(indexPath)) {
-      files.set(pathname, indexPath);
-      files.set(pathname + "/", indexPath);
+    if (pathname.slice(-11, -5) === "/index") {
+      files.set(pathname.slice(0, -11), path); // Without trailing '/'.
+      files.set(pathname.slice(0, -10), path); // With trailing '/'.
     }
   }
 }
